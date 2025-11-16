@@ -27,5 +27,7 @@ startCommand:
         description: Optional. Separate memories by context (e.g., 'work', 'personal'). Defaults to 'default'.
         default: default
   exampleConfig:
+    # All fields are optional - can be empty object {} for offline mode
+    openaiApiKey: sk-your-key-here
     contextId: default
 
