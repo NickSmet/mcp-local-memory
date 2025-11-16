@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "memory-work": {
+      "command": "npx",
+      "args": ["-y", "mcp-local-memory"],
+      "env": {
+        "OPENAI_API_KEY": "sk-your-openai-api-key-here",
+        "CONTEXT_ID": "work"
+      }
+    },
+    "memory-personal": {
+      "command": "npx",
+      "args": ["-y", "mcp-local-memory"],
+      "env": {
+        "OPENAI_API_KEY": "sk-your-openai-api-key-here",
+        "CONTEXT_ID": "personal"
+      }
+    }
+  }
+}
+

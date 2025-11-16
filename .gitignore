@@ -1,0 +1,29 @@
+node_modules/
+dist/
+*.log
+.env
+!.env.example
+.DS_Store
+docs/migration_backup_*/
+
+# Database files (for testing)
+*.db
+*.db-shm
+*.db-wal
+
+# OS files
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# npm
+*.tgz
+package-lock.json
+
+# Temporary files
+*.tmp
+*.temp
+
+temp/

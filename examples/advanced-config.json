@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "memory": {
+      "command": "npx",
+      "args": ["-y", "mcp-local-memory"],
+      "env": {
+        "OPENAI_API_KEY": "sk-your-openai-api-key-here",
+        "CONTEXT_ID": "work",
+        "SQLITE_PATH": "/custom/path/to/memory.db"
+      }
+    }
+  }
+}
+
