@@ -1,0 +1,86 @@
+{
+  "name": "mcp-local-memory",
+  "displayName": "Local Memory",
+  "description": "Local memory MCP server. Semantic search, context tagging, local SQLite storage. Works offline or with OpenAI for better accuracy.",
+  "icon": "🧠",
+  "category": "productivity",
+  "keywords": [
+    "memory",
+    "notes",
+    "context",
+    "search",
+    "knowledge",
+    "personal",
+    "sqlite",
+    "embeddings",
+    "offline"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NickSmet/mcp-local-memory"
+  },
+  "homepage": "https://github.com/NickSmet/mcp-local-memory#readme",
+  "author": {
+    "name": "Nick Smetannikov"
+  },
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "OPENAI_API_KEY": {
+        "type": "string",
+        "title": "OpenAI API Key (Optional)",
+        "description": "For better embeddings and automatic fact extraction. Works offline without it. Get key at: https://platform.openai.com/api-keys",
+        "secret": true
+      },
+      "CONTEXT_ID": {
+        "type": "string",
+        "title": "Context ID (Optional)",
+        "description": "Separate memories by context (e.g., 'work', 'personal'). Defaults to 'default'.",
+        "default": "default"
+      }
+    }
+  },
+  "environmentVariables": {
+    "OPENAI_API_KEY": {
+      "description": "Optional. Better embeddings and auto fact extraction",
+      "required": false
+    },
+    "CONTEXT_ID": {
+      "description": "Optional. Separate memory contexts (e.g., 'work', 'personal')",
+      "required": false,
+      "default": "default"
+    }
+  },
+  "examples": [
+    {
+      "title": "Offline Mode (Default)",
+      "description": "Works completely offline. Downloads ~130MB model on first use.",
+      "config": {}
+    },
+    {
+      "title": "With OpenAI",
+      "description": "Better embeddings and automatic fact extraction",
+      "config": {
+        "OPENAI_API_KEY": "sk-..."
+      }
+    },
+    {
+      "title": "Separate Contexts",
+      "description": "Use CONTEXT_ID to keep work and personal memories separate",
+      "config": {
+        "CONTEXT_ID": "work"
+      }
+    }
+  ],
+  "features": [
+    "Semantic search across stored memories",
+    "Context tags for organization",
+    "Works offline with local embeddings (~130MB)",
+    "Optional OpenAI mode for automatic fact extraction",
+    "SQLite storage, all data stays local",
+    "Separate contexts with CONTEXT_ID"
+  ],
+  "readme": "https://github.com/NickSmet/mcp-local-memory#readme"
+}
+
