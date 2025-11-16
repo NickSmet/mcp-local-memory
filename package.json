@@ -35,11 +35,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/nikolai-smetannikov/mcp-local-memory.git"
+    "url": "https://github.com/NickSmet/mcp-local-memory.git"
   },
-  "homepage": "https://github.com/nikolai-smetannikov/mcp-local-memory#readme",
+  "homepage": "https://github.com/NickSmet/mcp-local-memory#readme",
   "bugs": {
-    "url": "https://github.com/nikolai-smetannikov/mcp-local-memory/issues"
+    "url": "https://github.com/NickSmetmcp-local-memory/issues"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.1",
