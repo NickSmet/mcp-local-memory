@@ -91,6 +91,17 @@ You: "What's the main Jira Epic for this project?"
 AI: [Searches memory] It's [ABC-123](https://example.atlassian.net/browse/ABC-123)
 ```
 
+**Store large reference data:**
+```
+You: "Store this API configuration as a direct-access memory"
+AI: ✓ Saved as direct-access (won't appear in searches, retrieve by ID)
+```
+Direct-access memories are perfect for:
+- Large JSON configs
+- API responses for reference
+- Log files
+- Any structured data you want available but not searchable
+
 **Update/Organize Memories:**
 ```
 You: "Hey, pls retrieve all the memories we've had about project ABC. Now that 
@@ -219,6 +230,34 @@ Your AI can switch modes if needed:
 - Ask: "Switch to offline memory mode"
 - AI will use the `switch_embedding_mode` tool
 - Useful if OpenAI API has issues or you want to go offline
+
+### Direct-Access Memories
+
+Store large reference data without polluting search results:
+
+```json
+// Your AI can use this automatically when storing large data
+{
+  "text": "{...large JSON config...}",
+  "context_tags": ["api-config", "production"],
+  "direct_access_only": true
+}
+```
+
+**Direct-access memories:**
+- ✅ Skip fact extraction (200x faster for large data)
+- ✅ Invisible to search (no context pollution)
+- ✅ Retrievable by ID via `get_memory(id)`
+- ✅ Listable separately via `list_memories(direct_access_only: true)`
+- ✅ Support tags for organization
+
+**Perfect for:**
+- Large JSON configurations
+- API response caching
+- Log files and debug output
+- Structured reference data (schemas, specs)
+
+See [DIRECT_ACCESS_FEATURE.md](./DIRECT_ACCESS_FEATURE.md) for complete documentation.
 
 ## For Developers
 
