@@ -198,7 +198,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "list_memories",
         description:
-          "List memories chronologically (newest first). Good for browsing recent activity. Prefer search_memory for finding specific information - it's more precise. By default shows only normal searchable memories. Use direct_access_only=true to list/recover direct-access memories (text truncated to ~200 chars).",
+          "List memories chronologically (newest first). Text always truncated to ~200 chars (use get_memory for full content). Good for browsing recent activity. Prefer search_memory for finding specific information - it's more precise. By default shows only normal searchable memories. Use direct_access_only=true to list/recover direct-access memories.",
         inputSchema: {
           type: "object",
           properties: {
@@ -209,11 +209,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             },
             limit: {
               type: "number",
-              description: "Max memories. Default: 50. Keep low - search is more efficient for specific needs.",
+              description: "Max memories. Default: 50. Keep low to avoid large responses.",
             },
             direct_access_only: {
               type: "boolean",
-              description: "If true, lists ONLY direct-access memories (text truncated to ~200 chars). If false/omitted, lists ONLY normal searchable memories. Use true to recover lost memory IDs. Default: false.",
+              description: "If true, lists ONLY direct-access memories. If false/omitted, lists ONLY normal searchable memories. Use true to recover lost memory IDs. Default: false.",
             },
           },
         },

@@ -37,14 +37,12 @@ export async function handleListMemories(args: any) {
 
   const memories = listMemories(config.contextId, contextTags, limit, directAccessOnly);
 
-  // For direct-access memories, truncate the text to avoid context pollution
+  // Truncate text for ALL memories to keep responses manageable
   const formattedMemories = memories.map((memory) => {
     const formatted = formatMemory(memory);
     
-    if (directAccessOnly) {
-      // Truncate text for direct-access memories
-      formatted.text = truncateText(formatted.text);
-    }
+    // Always truncate text in list view
+    formatted.text = truncateText(formatted.text);
     
     return formatted;
   });
@@ -52,12 +50,8 @@ export async function handleListMemories(args: any) {
   const response: any = {
     count: memories.length,
     memories: formattedMemories,
+    note: "Text truncated to ~200 characters. Use get_memory(memory_id) to retrieve full content.",
   };
-
-  // Add note for direct-access listings
-  if (directAccessOnly) {
-    response.note = "Text truncated to ~200 characters. Use get_memory(memory_id) to retrieve full content.";
-  }
 
   return {
     content: [
