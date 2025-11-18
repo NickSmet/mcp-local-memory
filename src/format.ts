@@ -25,6 +25,7 @@ export function formatMemory(memory: Memory): any {
     created_at: formatTimestamp(memory.createdAt),
     updated_at: formatTimestamp(memory.updatedAt),
     version: memory.version,
+    direct_access_only: memory.directAccessOnly,
   };
 }
 

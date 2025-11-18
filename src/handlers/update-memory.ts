@@ -9,7 +9,7 @@ import config from "../config.js";
 import { db } from "../database.js";
 import { splitIntoFacts } from "../openai.js";
 import { embedder } from "../embeddings/factory.js";
-import { updateMemory, updateMemoryTags, deleteFactsForMemory, createFact } from "../operations.js";
+import { updateMemory, updateMemoryTags, deleteFactsForMemory, createFact, getMemory } from "../operations.js";
 import { formatMemory, formatFact } from "../format.js";
 import type { Fact } from "../types.js";
 
@@ -74,6 +74,37 @@ export async function handleUpdateMemory(args: any) {
   // Full update (text + tags + facts)
   if (!text) {
     throw new Error("text is required for full memory update");
+  }
+
+  // Check if this is a direct-access-only memory
+  const existingMemory = getMemory(memory_id);
+  if (!existingMemory) {
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify(
+            {
+              success: false,
+              message: "Memory not found",
+            },
+            null,
+            2
+          ),
+        },
+      ],
+    };
+  }
+
+  if (existingMemory.directAccessOnly) {
+    // Direct-access-only memories cannot have their text updated
+    // because that would require creating facts, converting them to searchable
+    throw new Error(
+      "Cannot update text for direct-access-only memories. " +
+      "Direct-access memories cannot be converted to searchable memories. " +
+      "To change the content: (1) delete this memory, (2) create a new one. " +
+      "To update tags only: use add_tags/remove_tags parameters without 'text'."
+    );
   }
 
   const contextTags = (context_tags as string[]) || [];

@@ -22,6 +22,23 @@ export function initDatabase(): DB {
   const db = new Database(config.sqlitePath);
   db.pragma("journal_mode = WAL");
 
+  // Check if migration for direct_access_only column is needed
+  try {
+    const columnsResult = db.pragma("table_info(memories)") as any[];
+    const hasDirectAccessOnly = Array.isArray(columnsResult) && 
+      columnsResult.some((col: any) => col.name === "direct_access_only");
+    
+    if (!hasDirectAccessOnly && columnsResult.length > 0) {
+      // Migration: Add direct_access_only column to existing databases
+      db.exec(`
+        ALTER TABLE memories ADD COLUMN direct_access_only INTEGER NOT NULL DEFAULT 0;
+        CREATE INDEX IF NOT EXISTS idx_memories_direct_access_only ON memories(direct_access_only);
+      `);
+    }
+  } catch (error) {
+    // Table doesn't exist yet, will be created by schema below
+  }
+
   // Create schema
   db.exec(`
     CREATE TABLE IF NOT EXISTS memories (
@@ -31,11 +48,13 @@ export function initDatabase(): DB {
       tags TEXT NOT NULL, -- JSON array
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL,
-      version INTEGER NOT NULL DEFAULT 1
+      version INTEGER NOT NULL DEFAULT 1,
+      direct_access_only INTEGER NOT NULL DEFAULT 0 -- Boolean: 1 = direct-access only, 0 = normal searchable
     );
 
     CREATE INDEX IF NOT EXISTS idx_memories_context_id ON memories(context_id);
     CREATE INDEX IF NOT EXISTS idx_memories_created_at ON memories(created_at);
+    CREATE INDEX IF NOT EXISTS idx_memories_direct_access_only ON memories(direct_access_only);
 
     CREATE TABLE IF NOT EXISTS facts (
       id TEXT PRIMARY KEY,

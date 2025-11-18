@@ -106,13 +106,13 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "add_memory",
         description:
-          "Store a new memory. Memories are broken into searchable 'facts' (atomic statements). Context tags organize memories by topic/project - check get_context_tags for existing tags. Provide facts manually for control, or omit to let AI extract them (extracted facts returned for review).",
+          "Store a new memory. Memories are broken into searchable 'facts' (atomic statements). Context tags organize memories by topic/project - check get_context_tags for existing tags. Provide facts manually for control, or omit to let AI extract them (extracted facts returned for review). Use direct_access_only for large reference data (JSON configs, API responses, logs) that shouldn't pollute search results.",
         inputSchema: {
           type: "object",
           properties: {
             text: {
               type: "string",
-              description: "Memory content. Keep concise (4-5 sentences), focused on a single topic.",
+              description: "Memory content. Keep concise (4-5 sentences), focused on a single topic. Can be larger for direct_access_only memories.",
             },
             context_tags: {
               type: "array",
@@ -122,7 +122,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             facts: {
               type: "array",
               items: { type: "string" },
-              description: "Optional: Manually specify facts. If omitted, AI extracts them automatically.",
+              description: "Optional: Manually specify facts. If omitted, AI extracts them automatically. Ignored if direct_access_only is true.",
+            },
+            direct_access_only: {
+              type: "boolean",
+              description: "If true, skips fact extraction and makes memory invisible to searches/listings. Only retrievable via get_memory(memory_id). Use for large reference data (JSON configs, API responses, logs) to avoid context pollution. Default: false.",
             },
           },
           required: ["text"],
@@ -194,7 +198,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "list_memories",
         description:
-          "List memories chronologically (newest first). Good for browsing recent activity. Prefer search_memory for finding specific information - it's more precise.",
+          "List memories chronologically (newest first). Good for browsing recent activity. Prefer search_memory for finding specific information - it's more precise. By default shows only normal searchable memories. Use direct_access_only=true to list/recover direct-access memories (text truncated to ~200 chars).",
         inputSchema: {
           type: "object",
           properties: {
@@ -206,6 +210,10 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             limit: {
               type: "number",
               description: "Max memories. Default: 50. Keep low - search is more efficient for specific needs.",
+            },
+            direct_access_only: {
+              type: "boolean",
+              description: "If true, lists ONLY direct-access memories (text truncated to ~200 chars). If false/omitted, lists ONLY normal searchable memories. Use true to recover lost memory IDs. Default: false.",
             },
           },
         },

@@ -16,11 +16,40 @@ export async function handleAddMemory(args: any) {
   const text = args.text as string;
   const contextTags = (args.context_tags as string[]) || [];
   const manualFacts = args.facts as string[] | undefined;
+  const directAccessOnly = args.direct_access_only === true;
 
   if (!text) {
     throw new Error("Text is required");
   }
 
+  // For direct-access-only memories, skip fact extraction entirely
+  if (directAccessOnly) {
+    // Create memory without facts in transaction
+    const insertMemory = db.transaction(() => {
+      const memory = createMemory(config.contextId, text, contextTags, true);
+      return { memory, facts: [] };
+    });
+
+    const result = insertMemory();
+
+    const response: any = {
+      success: true,
+      memory: formatMemory(result.memory),
+      message: "Added direct-access-only memory (no facts extracted)",
+      direct_access_only: true,
+    };
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify(response, null, 2),
+        },
+      ],
+    };
+  }
+
+  // Normal searchable memory flow
   // Check if manual facts are required
   if (embedder.requiresManualFacts() && (!manualFacts || manualFacts.length === 0)) {
     throw new Error(
@@ -49,7 +78,7 @@ export async function handleAddMemory(args: any) {
 
   // Create memory and facts in transaction
   const insertMemoriesAndFacts = db.transaction(() => {
-    const memory = createMemory(config.contextId, text, contextTags);
+    const memory = createMemory(config.contextId, text, contextTags, false);
     const facts: Fact[] = [];
 
     for (let i = 0; i < factTexts.length; i++) {

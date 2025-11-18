@@ -10,6 +10,7 @@ export interface Memory {
   createdAt: number;
   updatedAt: number;
   version: number;
+  directAccessOnly: boolean;
 }
 
 export interface Fact {

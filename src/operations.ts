@@ -22,7 +22,12 @@ function generateShortId(): string {
 /**
  * Create a new memory
  */
-export function createMemory(contextId: string, text: string, tags: string[]): Memory {
+export function createMemory(
+  contextId: string, 
+  text: string, 
+  tags: string[], 
+  directAccessOnly: boolean = false
+): Memory {
   const now = Date.now();
   const memory: Memory = {
     id: generateShortId(),
@@ -32,11 +37,12 @@ export function createMemory(contextId: string, text: string, tags: string[]): M
     createdAt: now,
     updatedAt: now,
     version: 1,
+    directAccessOnly,
   };
 
   const stmt = db.prepare(`
-    INSERT INTO memories (id, context_id, text, tags, created_at, updated_at, version)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO memories (id, context_id, text, tags, created_at, updated_at, version, direct_access_only)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   stmt.run(
@@ -46,7 +52,8 @@ export function createMemory(contextId: string, text: string, tags: string[]): M
     JSON.stringify(memory.tags),
     memory.createdAt,
     memory.updatedAt,
-    memory.version
+    memory.version,
+    directAccessOnly ? 1 : 0
   );
 
   return memory;
@@ -102,7 +109,7 @@ export function createFact(
  */
 export function getMemory(memoryId: string): Memory | null {
   const stmt = db.prepare(`
-    SELECT id, context_id, text, tags, created_at, updated_at, version
+    SELECT id, context_id, text, tags, created_at, updated_at, version, direct_access_only
     FROM memories WHERE id = ?
   `);
 
@@ -117,6 +124,7 @@ export function getMemory(memoryId: string): Memory | null {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     version: row.version,
+    directAccessOnly: row.direct_access_only === 1,
   };
 }
 
@@ -149,10 +157,12 @@ export interface TagMetadata {
 
 /**
  * Get all unique tags for a user with metadata, with optional regex filter
+ * Excludes direct-access-only memories from tag counts
  */
 export function getAllTags(contextId: string, regexPattern?: string): TagMetadata[] {
   const stmt = db.prepare(`
-    SELECT tags, created_at, updated_at FROM memories WHERE context_id = ?
+    SELECT tags, created_at, updated_at FROM memories 
+    WHERE context_id = ? AND direct_access_only = 0
   `);
 
   const rows = stmt.all(contextId) as any[];
@@ -216,6 +226,7 @@ export function getAllTags(contextId: string, regexPattern?: string): TagMetadat
 
 /**
  * Search facts by vector similarity with optional tag boosting (soft, not filter)
+ * Direct-access-only memories are excluded from search results
  */
 export function searchFacts(
   contextId: string,
@@ -227,17 +238,17 @@ export function searchFacts(
 ): FactWithScore[] {
   const vectorTable = EMBEDDING_CONFIGS[embeddingType].tableName;
   
-  // Get all facts (no hard tag filtering)
+  // Get all facts from searchable memories (exclude direct-access-only)
   const sql = `
     SELECT 
       f.id, f.memory_id, f.text, f.created_at, f.updated_at, f.version,
       fv.embedding,
       m.id as m_id, m.context_id, m.text as m_text, m.tags, m.created_at as m_created_at, 
-      m.updated_at as m_updated_at, m.version as m_version
+      m.updated_at as m_updated_at, m.version as m_version, m.direct_access_only
     FROM facts f
     JOIN ${vectorTable} fv ON f.id = fv.fact_id
     JOIN memories m ON f.memory_id = m.id
-    WHERE m.context_id = ?
+    WHERE m.context_id = ? AND m.direct_access_only = 0
   `;
 
   const stmt = db.prepare(sql);
@@ -289,6 +300,7 @@ export function searchFacts(
         createdAt: row.m_created_at,
         updatedAt: row.m_updated_at,
         version: row.m_version,
+        directAccessOnly: row.direct_access_only === 1,
       },
     };
   });
@@ -300,22 +312,30 @@ export function searchFacts(
 
 /**
  * List all memories for a user with optional case-insensitive tag filtering
+ * By default, excludes direct-access-only memories unless explicitly requested
  */
 export function listMemories(
   contextId: string,
   filterTags?: string[],
-  limit: number = 50
+  limit: number = 50,
+  directAccessOnly?: boolean
 ): Memory[] {
-  // Get all memories for context, ordered by creation date
+  // Determine the direct_access_only filter
+  // undefined/null = exclude direct-access (show only normal memories)
+  // false = exclude direct-access (show only normal memories)
+  // true = show ONLY direct-access memories
+  const directAccessFilter = directAccessOnly === true ? 1 : 0;
+  
+  // Get memories for context, filtered by direct_access_only, ordered by creation date
   const sql = `
-    SELECT id, context_id, text, tags, created_at, updated_at, version
+    SELECT id, context_id, text, tags, created_at, updated_at, version, direct_access_only
     FROM memories
-    WHERE context_id = ?
+    WHERE context_id = ? AND direct_access_only = ?
     ORDER BY created_at DESC
   `;
 
   const stmt = db.prepare(sql);
-  const rows = stmt.all(contextId) as any[];
+  const rows = stmt.all(contextId, directAccessFilter) as any[];
 
   // Parse and filter in JavaScript for case-insensitive matching
   let memories = rows.map((row) => ({
@@ -326,6 +346,7 @@ export function listMemories(
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     version: row.version,
+    directAccessOnly: row.direct_access_only === 1,
   }));
 
   // Apply case-insensitive tag filtering if provided
@@ -346,6 +367,7 @@ export function listMemories(
 
 /**
  * Update an existing memory
+ * Preserves the directAccessOnly status
  */
 export function updateMemory(
   memoryId: string,
@@ -583,6 +605,7 @@ export function getToolCallNoteStats(
 /**
  * Get facts that are missing embeddings for a specific embedding type
  * Returns facts that don't have entries in the target embedding table
+ * Excludes facts from direct-access-only memories
  */
 export function getFactsMissingEmbeddings(embeddingType: EmbeddingType): Array<{ id: string; text: string }> {
   const vectorTable = EMBEDDING_CONFIGS[embeddingType].tableName;
@@ -590,8 +613,9 @@ export function getFactsMissingEmbeddings(embeddingType: EmbeddingType): Array<{
   const stmt = db.prepare(`
     SELECT f.id, f.text
     FROM facts f
+    JOIN memories m ON f.memory_id = m.id
     LEFT JOIN ${vectorTable} v ON f.id = v.fact_id
-    WHERE v.fact_id IS NULL
+    WHERE v.fact_id IS NULL AND m.direct_access_only = 0
   `);
   
   const rows = stmt.all() as any[];
@@ -603,6 +627,7 @@ export function getFactsMissingEmbeddings(embeddingType: EmbeddingType): Array<{
 
 /**
  * Get count of facts missing embeddings for a specific embedding type
+ * Excludes facts from direct-access-only memories
  */
 export function countFactsMissingEmbeddings(embeddingType: EmbeddingType): number {
   const vectorTable = EMBEDDING_CONFIGS[embeddingType].tableName;
@@ -610,8 +635,9 @@ export function countFactsMissingEmbeddings(embeddingType: EmbeddingType): numbe
   const stmt = db.prepare(`
     SELECT COUNT(*) as count
     FROM facts f
+    JOIN memories m ON f.memory_id = m.id
     LEFT JOIN ${vectorTable} v ON f.id = v.fact_id
-    WHERE v.fact_id IS NULL
+    WHERE v.fact_id IS NULL AND m.direct_access_only = 0
   `);
   
   const row = stmt.get() as any;
