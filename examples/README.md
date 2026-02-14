@@ -70,7 +70,7 @@ Example configurations for MCP Local Memory. All use `npx` for easy installation
 
 ## 🔑 Get OpenAI API Key
 
-Visit: https://platform.openai.com/api-keys
+Visit: [OpenAI API keys](https://platform.openai.com/api-keys)
 
 ---
 
@@ -85,5 +85,5 @@ Visit: https://platform.openai.com/api-keys
 
 ## 📚 More Info
 
-See the main [README.md](../README.md) for full documentation.
+See the main [README.md](../README.md) and `docs/SPEC-INDEX.md` for full documentation.
 

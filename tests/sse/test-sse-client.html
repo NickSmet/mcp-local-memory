@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP Local Memory SSE Test Client</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #f9f9f9;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .status.connected {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .status.disconnected {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        pre {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .response {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧠 MCP Local Memory - SSE Test Client</h1>
+        
+        <div class="test-section">
+            <h2>Connection Status</h2>
+            <div id="connectionStatus" class="status disconnected">Disconnected</div>
+            <button id="connectBtn" onclick="connect()">Connect to SSE</button>
+            <button id="disconnectBtn" onclick="disconnect()" disabled>Disconnect</button>
+        </div>
+
+        <div class="test-section">
+            <h2>Test Operations</h2>
+            <button onclick="listMemories()">List Memories</button>
+            <button onclick="getTags()">Get Context Tags</button>
+            <button onclick="searchMemories()">Search Memories</button>
+            <button onclick="addMemory()">Add Test Memory</button>
+        </div>
+
+        <div class="test-section">
+            <h2>Response</h2>
+            <div class="response">
+                <pre id="responseOutput">No requests sent yet...</pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SSE_ENDPOINT = 'http://localhost:3133/sse';
+        let eventSource = null;
+        let messageId = 1;
+
+        function updateStatus(connected) {
+            const status = document.getElementById('connectionStatus');
+            const connectBtn = document.getElementById('connectBtn');
+            const disconnectBtn = document.getElementById('disconnectBtn');
+            
+            if (connected) {
+                status.textContent = '✅ Connected to ' + SSE_ENDPOINT;
+                status.className = 'status connected';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+            } else {
+                status.textContent = '❌ Disconnected';
+                status.className = 'status disconnected';
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+            }
+        }
+
+        function log(message, data = null) {
+            const output = document.getElementById('responseOutput');
+            const timestamp = new Date().toLocaleTimeString();
+            const dataStr = data ? '\n' + JSON.stringify(data, null, 2) : '';
+            output.textContent = `[${timestamp}] ${message}${dataStr}\n\n` + output.textContent;
+        }
+
+        function connect() {
+            if (eventSource) {
+                eventSource.close();
+            }
+
+            log('Connecting to SSE endpoint...');
+            eventSource = new EventSource(SSE_ENDPOINT);
+
+            eventSource.onopen = (event) => {
+                updateStatus(true);
+                log('✅ SSE connection established');
+            };
+
+            eventSource.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    log('📨 Received message:', data);
+                } catch (e) {
+                    log('📨 Received raw message:', event.data);
+                }
+            };
+
+            eventSource.onerror = (error) => {
+                log('❌ SSE error:', error);
+                updateStatus(false);
+                if (eventSource) {
+                    eventSource.close();
+                }
+            };
+        }
+
+        function disconnect() {
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+                updateStatus(false);
+                log('Disconnected from SSE');
+            }
+        }
+
+        async function sendRequest(method, params = {}) {
+            if (!eventSource || eventSource.readyState !== EventSource.OPEN) {
+                log('❌ Not connected! Please connect first.');
+                return;
+            }
+
+            const request = {
+                jsonrpc: '2.0',
+                id: messageId++,
+                method: method,
+                params: params
+            };
+
+            log(`📤 Sending ${method}`, request);
+
+            try {
+                const response = await fetch('http://localhost:3133/mcp', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(request)
+                });
+
+                const data = await response.json();
+                log(`📥 Response from ${method}`, data);
+            } catch (error) {
+                log('❌ Request error:', error.message);
+            }
+        }
+
+        function listMemories() {
+            sendRequest('tools/call', {
+                name: 'list_memories',
+                arguments: { limit: 5 }
+            });
+        }
+
+        function getTags() {
+            sendRequest('tools/call', {
+                name: 'get_context_tags',
+                arguments: {}
+            });
+        }
+
+        function searchMemories() {
+            const query = prompt('Enter search query:', 'configuration');
+            if (query) {
+                sendRequest('tools/call', {
+                    name: 'search_memory',
+                    arguments: { query: query, limit: 3 }
+                });
+            }
+        }
+
+        function addMemory() {
+            const data = prompt('Enter memory text:', 'This is a test memory from SSE interface');
+            if (data) {
+                const tags = prompt('Enter tags (comma separated):', 'test,sse');
+                sendRequest('tools/call', {
+                    name: 'add_memory',
+                    arguments: {
+                        data: data,
+                        context_tags: tags ? tags.split(',').map(t => t.trim()) : []
+                    }
+                });
+            }
+        }
+
+        // Auto-connect on page load
+        window.onload = () => {
+            log('🚀 SSE Test Client ready');
+            log('Click "Connect to SSE" to start');
+        };
+
+        window.onbeforeunload = () => {
+            if (eventSource) {
+                eventSource.close();
+            }
+        };
+    </script>
+</body>
+</html>
+

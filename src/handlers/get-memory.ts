@@ -5,6 +5,7 @@
  */
 
 import { getMemory, getFactsByMemoryId } from "../operations.js";
+import { formatMemory } from "../format.js";
 
 export async function handleGetMemory(args: any) {
   const { memory_id } = args;
@@ -42,15 +43,7 @@ export async function handleGetMemory(args: any) {
         text: JSON.stringify(
           {
             success: true,
-            memory: {
-              id: memory.id,
-              context_id: memory.contextId,
-              text: memory.text,
-              context_tags: memory.tags,
-              created_at: new Date(memory.createdAt).toISOString(),
-              updated_at: new Date(memory.updatedAt).toISOString(),
-              version: memory.version,
-            },
+            memory: formatMemory(memory),
             facts: facts.map((f) => ({
               id: f.id,
               text: f.text,

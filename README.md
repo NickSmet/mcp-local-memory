@@ -176,7 +176,7 @@ Your memory tool helps maintain context across conversations. Use it thoughtfull
 If you've already retrieved relevant memories during this conversation, you can update them directly without re-checking. Otherwise, search first to see what exists.
 ```
 
-> 💡 **More advanced usage:** See [README-COMPLETE.md](./README-COMPLETE.md) for technical details, tool call notes system, and advanced features.
+> 💡 **Developer / technical docs:** Start at [`docs/SPEC-INDEX.md`](./docs/SPEC-INDEX.md) (architecture, specs, and feature references).
 
 ## Advanced Configuration
 
@@ -257,13 +257,13 @@ Store large reference data without polluting search results:
 - Log files and debug output
 - Structured reference data (schemas, specs)
 
-See [DIRECT_ACCESS_FEATURE.md](./DIRECT_ACCESS_FEATURE.md) for complete documentation.
+See [`docs/features/direct-access-only.md`](./docs/features/direct-access-only.md) for complete documentation.
 
 ## For Developers
 
 This is a user guide. For technical documentation, see:
 - [ARCHITECTURE.md](./docs/ARCHITECTURE.md) - How it works internally
-- [SYSTEM_PROMPT_TEMPLATE.md](./docs/SYSTEM_PROMPT_TEMPLATE.md) - Ready-to-use prompt template for AI agents
+- [`docs/features/system-prompt-template.md`](./docs/features/system-prompt-template.md) - Ready-to-use prompt template for AI agents
 
 **More examples:** Check the [examples/](./examples/) folder for different configuration options.
 
